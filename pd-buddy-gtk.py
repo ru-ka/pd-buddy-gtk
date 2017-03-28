@@ -65,6 +65,21 @@ class Handler:
             ss.set_visible_child(sf)
             sl.insert(SelectListRow(serport), -1)
 
+        def update_header_func(row, before, data):
+            """Add a separator header to all rows but the first one"""
+            if before is None:
+                row.set_header(None)
+                return
+
+            current = row.get_header()
+            if current is None:
+                current = Gtk.Separator.new(Gtk.Orientation.HORIZONTAL)
+                current.show()
+                row.set_header(current)
+
+        # Add separators to the list
+        sl.set_header_func(update_header_func, None)
+
     def on_pdb_window_delete_event(self, *args):
         Gtk.main_quit(*args)
 
