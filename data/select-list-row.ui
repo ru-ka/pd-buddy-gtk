@@ -38,6 +38,23 @@
       </packing>
     </child>
     <child>
+      <object class="GtkButton" id="identify">
+        <property name="visible">True</property>
+        <property name="can_focus">True</property>
+        <property name="receives_default">True</property>
+        <property name="tooltip_text" translatable="yes">Identify device</property>
+        <property name="halign">center</property>
+        <property name="valign">center</property>
+        <property name="image">identify-image</property>
+        <signal name="clicked" handler="on_identify_clicked" swapped="no"/>
+      </object>
+      <packing>
+        <property name="left_attach">1</property>
+        <property name="top_attach">0</property>
+        <property name="height">2</property>
+      </packing>
+    </child>
+    <child>
       <object class="GtkLabel" id="device">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
@@ -55,21 +72,6 @@
       <packing>
         <property name="left_attach">0</property>
         <property name="top_attach">1</property>
-      </packing>
-    </child>
-    <child>
-      <object class="GtkButton" id="identify">
-        <property name="visible">True</property>
-        <property name="can_focus">True</property>
-        <property name="receives_default">True</property>
-        <property name="tooltip_text" translatable="yes">Identify device</property>
-        <property name="image">identify-image</property>
-        <signal name="clicked" handler="on_identify_clicked" swapped="no"/>
-      </object>
-      <packing>
-        <property name="left_attach">1</property>
-        <property name="top_attach">0</property>
-        <property name="height">2</property>
       </packing>
     </child>
   </object>
