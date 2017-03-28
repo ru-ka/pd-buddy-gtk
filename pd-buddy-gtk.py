@@ -9,20 +9,33 @@ gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
 
 
+def update_header_func(row, before, data):
+    """Add a separator header to all rows but the first one"""
+    if before is None:
+        row.set_header(None)
+        return
+
+    current = row.get_header()
+    if current is None:
+        current = Gtk.Separator.new(Gtk.Orientation.HORIZONTAL)
+        row.set_header(current)
+
 def pdb_send_message(sp, message):
-        # Open the serial port
-        # FIXME handle exceptions
-        sp = serial.Serial(sp.device, baudrate=115200, timeout=0.01)
+    """Send a message over the serial port and return the response"""
+    # Open the serial port
+    # FIXME handle exceptions
+    sp = serial.Serial(sp.device, baudrate=115200, timeout=0.01)
 
-        sp.write(bytes(message, 'utf-8') + b'\r\n')
-        sp.flush()
-        answer = sp.readlines()
+    sp.write(bytes(message, 'utf-8') + b'\r\n')
+    sp.flush()
+    answer = sp.readlines()
 
-        sp.close()
+    sp.close()
 
-        # Remove the echoed command and prompt
-        answer = answer[1:-1]
-        return answer
+    # Remove the echoed command and prompt
+    answer = answer[1:-1]
+    return answer
+
 
 class SelectListRow(Gtk.ListBoxRow):
 
@@ -65,18 +78,6 @@ class Handler:
             ss.set_visible_child(sf)
             sl.insert(SelectListRow(serport), -1)
 
-        def update_header_func(row, before, data):
-            """Add a separator header to all rows but the first one"""
-            if before is None:
-                row.set_header(None)
-                return
-
-            current = row.get_header()
-            if current is None:
-                current = Gtk.Separator.new(Gtk.Orientation.HORIZONTAL)
-                current.show()
-                row.set_header(current)
-
         # Add separators to the list
         sl.set_header_func(update_header_func, None)
 
@@ -91,10 +92,10 @@ class Handler:
         self.serial_port = row.serial_port
 
         pdb_send_message(self.serial_port, 'load')
-        lines = pdb_send_message(self.serial_port, 'get_tmpcfg')
+        tmpcfg = pdb_send_message(self.serial_port, 'get_tmpcfg')
 
         # Get information
-        for line in lines:
+        for line in tmpcfg:
             if line.startswith(b'v:'):
                 v = line.split()[1]
                 if v == b'5.00':
