@@ -9,17 +9,6 @@ gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gio, GObject, GLib
 
 
-def update_header_func(row, before, data):
-    """Add a separator header to all rows but the first one"""
-    if before is None:
-        row.set_header(None)
-        return
-
-    current = row.get_header()
-    if current is None:
-        current = Gtk.Separator.new(Gtk.Orientation.HORIZONTAL)
-        row.set_header(current)
-
 def pdb_send_message(sp, message):
     """Send a message over the serial port and return the response"""
     # Open the serial port
@@ -46,16 +35,6 @@ class ListRowModel(GObject.GObject):
 
 class SelectListStore(Gio.ListStore):
 
-    def __init__(self, stack, list_empty, list_frame):
-        Gio.ListStore.__init__(self)
-
-        self.stack = stack
-        self.list_empty = list_empty
-        self.list_frame = list_frame
-
-        self.update_items()
-        GLib.timeout_add(1000, self.update_items)
-
     def update_items(self):
         # Get a list of serial ports
         serports = list(serial.tools.list_ports.grep("1209:0001"))
@@ -81,38 +60,86 @@ class SelectListStore(Gio.ListStore):
             if port is not None:
                 self.append(ListRowModel(port))
 
+
+class SelectList(Gtk.Box):
+    __gsignals__ = {
+        'row-activated': (GObject.SIGNAL_RUN_FIRST, None,
+                      (object,))
+    }
+
+    def __init__(self):
+        Gtk.Box.__init__(self)
+
+        self._model = None
+
+        self._builder = Gtk.Builder()
+        self._builder.add_from_file("data/select-stack.ui")
+        self._builder.connect_signals(self)
+
+        sl = self._builder.get_object("select-list")
+
+        # Add separators to the list
+        sl.set_header_func(self._update_header_func, None)
+
+        self.pack_start(self._builder.get_object("select-stack"), True, True, 0)
+        self.show_all()
+
+    def _update_header_func(self, row, before, data):
+        """Add a separator header to all rows but the first one"""
+        if before is None:
+            row.set_header(None)
+            return
+
+        current = row.get_header()
+        if current is None:
+            current = Gtk.Separator.new(Gtk.Orientation.HORIZONTAL)
+            row.set_header(current)
+
+    def bind_model(self, model, func):
+        self._builder.get_object("select-list").bind_model(model, func)
+        self._model = model
+
+        self._reload()
+        GLib.timeout_add(1000, self._reload)
+
+    def _reload(self):
+        self._model.update_items()
+
         # Set the visible child
-        # FIXME: This is rather poor organization
-        if self.get_n_items():
-            self.stack.set_visible_child(self.list_frame)
+        stack = self._builder.get_object("select-stack")
+        if self._model.get_n_items():
+            stack.set_visible_child(self._builder.get_object("select-frame"))
         else:
-            self.stack.set_visible_child(self.list_empty)
+            stack.set_visible_child(self._builder.get_object("select-none"))
 
         return True
+
+    def on_select_list_row_activated(self, box, row):
+        self.emit("row-activated", row.model.serport)
 
 
 class SelectListRow(Gtk.ListBoxRow):
 
-    def __init__(self, lrm):
+    def __init__(self, model):
         Gtk.EventBox.__init__(self)
 
-        self.serial_port = lrm.serport
+        self.model = model
 
         self._builder = Gtk.Builder()
         self._builder.add_from_file("data/select-list-row.ui")
         self._builder.connect_signals(self)
 
         name = self._builder.get_object("name")
-        name.set_text(self.serial_port.description)
+        name.set_text(self.model.serport.description)
 
         device = self._builder.get_object("device")
-        device.set_text(self.serial_port.device)
+        device.set_text(self.model.serport.device)
 
         self.add(self._builder.get_object("grid"))
         self.show_all()
 
     def on_identify_clicked(self, button):
-        pdb_send_message(self.serial_port, 'identify')
+        pdb_send_message(self.model.serport, 'identify')
 
 
 class Handler:
@@ -122,27 +149,25 @@ class Handler:
 
     def on_pdb_window_realize(self, *args):
         # Get the list
-        sl = self.builder.get_object("select-list")
-        ss = self.builder.get_object("select-stack")
-        se = self.builder.get_object("select-none")
-        sf = self.builder.get_object("select-frame")
+        sb = self.builder.get_object("select-box")
+        sl = SelectList()
+        sb.pack_start(sl, True, True, 0)
 
-        liststore = SelectListStore(ss, se, sf)
+        liststore = SelectListStore()
 
         sl.bind_model(liststore, SelectListRow)
 
-        # Add separators to the list
-        sl.set_header_func(update_header_func, None)
+        sl.connect("row-activated", self.on_select_list_row_activated)
 
     def on_pdb_window_delete_event(self, *args):
         Gtk.main_quit(*args)
 
-    def on_select_list_row_activated(self, box, row):
+    def on_select_list_row_activated(self, selectlist, serport):
         # Get voltage and current widgets
         voltage = self.builder.get_object("voltage-combobox")
         current = self.builder.get_object("current-spinbutton")
 
-        self.serial_port = row.serial_port
+        self.serial_port = serport
 
         pdb_send_message(self.serial_port, 'load')
         tmpcfg = pdb_send_message(self.serial_port, 'get_tmpcfg')
@@ -170,7 +195,7 @@ class Handler:
         # Show the Sink page
         hst = self.builder.get_object("header-stack")
         hsink = self.builder.get_object("header-sink")
-        hsink.set_subtitle(row.serial_port.device)
+        hsink.set_subtitle(serport.device)
         hst.set_visible_child(hsink)
 
         st = self.builder.get_object("stack")
