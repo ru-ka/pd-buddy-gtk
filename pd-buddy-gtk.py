@@ -57,12 +57,29 @@ class SelectListStore(Gio.ListStore):
         GLib.timeout_add(1000, self.update_items)
 
     def update_items(self):
-        # Clear the old entries
-        self.remove_all()
+        # Get a list of serial ports
+        serports = list(serial.tools.list_ports.grep("1209:0001"))
 
-        # Search for the serial ports
-        for serport in serial.tools.list_ports.grep("1209:0001"):
-            self.append(ListRowModel(serport))
+        # Mark ports to remove or add
+        remove_list = []
+        list_len = self.get_n_items()
+        for i in range(list_len):
+            remove = True
+            for j in range(len(serports)):
+                if serports[j] is not None and self.get_item(i).serport == serports[j]:
+                    serports[j] = None
+                    remove = False
+            if remove:
+                remove_list.append(i)
+
+        # Remove the missing ones
+        for i in remove_list:
+            self.remove(i)
+
+        # Add any new ports
+        for port in serports:
+            if port is not None:
+                self.append(ListRowModel(port))
 
         # Set the visible child
         # FIXME: This is rather poor organization
