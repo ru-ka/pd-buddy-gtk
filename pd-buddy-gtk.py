@@ -6,7 +6,7 @@ import serial
 import serial.tools.list_ports
 import gi
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk
+from gi.repository import Gtk, Gio, GObject, GLib
 
 
 def update_header_func(row, before, data):
@@ -37,22 +37,59 @@ def pdb_send_message(sp, message):
     return answer
 
 
+class ListRowModel(GObject.GObject):
+
+    def __init__(self, serport):
+        GObject.GObject.__init__(self)
+        self.serport = serport
+
+
+class SelectListStore(Gio.ListStore):
+
+    def __init__(self, stack, list_empty, list_frame):
+        Gio.ListStore.__init__(self)
+
+        self.stack = stack
+        self.list_empty = list_empty
+        self.list_frame = list_frame
+
+        self.update_items()
+        GLib.timeout_add(1000, self.update_items)
+
+    def update_items(self):
+        # Clear the old entries
+        self.remove_all()
+
+        # Search for the serial ports
+        for serport in serial.tools.list_ports.grep("1209:0001"):
+            self.append(ListRowModel(serport))
+
+        # Set the visible child
+        # FIXME: This is rather poor organization
+        if self.get_n_items():
+            self.stack.set_visible_child(self.list_frame)
+        else:
+            self.stack.set_visible_child(self.list_empty)
+
+        return True
+
+
 class SelectListRow(Gtk.ListBoxRow):
 
-    def __init__(self, serial_port):
+    def __init__(self, lrm):
         Gtk.EventBox.__init__(self)
 
-        self.serial_port = serial_port
+        self.serial_port = lrm.serport
 
         self._builder = Gtk.Builder()
         self._builder.add_from_file("data/select-list-row.ui")
         self._builder.connect_signals(self)
 
         name = self._builder.get_object("name")
-        name.set_text(serial_port.description)
+        name.set_text(self.serial_port.description)
 
         device = self._builder.get_object("device")
-        device.set_text(serial_port.device)
+        device.set_text(self.serial_port.device)
 
         self.add(self._builder.get_object("grid"))
         self.show_all()
@@ -70,13 +107,12 @@ class Handler:
         # Get the list
         sl = self.builder.get_object("select-list")
         ss = self.builder.get_object("select-stack")
+        se = self.builder.get_object("select-none")
         sf = self.builder.get_object("select-frame")
 
-        # Search for the serial ports
-        for serport in serial.tools.list_ports.grep("1209:0001"):
-            # Show the list if we have a serial port
-            ss.set_visible_child(sf)
-            sl.insert(SelectListRow(serport), -1)
+        liststore = SelectListStore(ss, se, sf)
+
+        sl.bind_model(liststore, SelectListRow)
 
         # Add separators to the list
         sl.set_header_func(update_header_func, None)
@@ -135,10 +171,6 @@ class Handler:
         st.set_visible_child(select)
 
     def on_header_sink_save_clicked(self, button):
-        combo = self.builder.get_object("voltage-combobox")
-        spin = self.builder.get_object("current-spinbutton")
-        print("{} V".format(combo.get_active_text()))
-        print("{} A".format(spin.get_value()))
         rev = self.builder.get_object("header-sink-save-revealer")
         rev.set_reveal_child(False)
 
