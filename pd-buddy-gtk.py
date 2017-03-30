@@ -146,6 +146,9 @@ class Handler:
 
     def __init__(self, builder):
         self.builder = builder
+        self.serial_port = None
+        self.voltage = None
+        self.current = None
 
     def on_pdb_window_realize(self, *args):
         # Get the list
@@ -172,7 +175,7 @@ class Handler:
         pdb_send_message(self.serial_port, 'load')
         tmpcfg = pdb_send_message(self.serial_port, 'get_tmpcfg')
 
-        # Get information
+        # Get voltage and current from device and load them into the GUI
         for line in tmpcfg:
             if line.startswith(b'v:'):
                 v = line.split()[1]
@@ -188,9 +191,8 @@ class Handler:
                 i = float(line.split()[1])
                 current.set_value(i)
 
-        # Hide the Save button
-        rev = self.builder.get_object("header-sink-save-revealer")
-        rev.set_reveal_child(False)
+        self._store_device_settings()
+        self._set_save_button_visibility()
 
         # Show the Sink page
         hst = self.builder.get_object("header-stack")
@@ -213,21 +215,40 @@ class Handler:
         st.set_visible_child(select)
 
     def on_header_sink_save_clicked(self, button):
-        rev = self.builder.get_object("header-sink-save-revealer")
-        rev.set_reveal_child(False)
+        self._store_device_settings()
+        self._set_save_button_visibility()
 
         pdb_send_message(self.serial_port, 'write')
 
-    def on_voltage_combobox_changed(self, combo):
+    def _store_device_settings(self):
+        """Store the settings that were loaded from the device"""
+        # Get voltage and current widgets
+        voltage = self.builder.get_object("voltage-combobox")
+        current = self.builder.get_object("current-spinbutton")
+
+        # Remember the loaded settings
+        self.voltage = voltage.get_active_id()
+        self.current = current.get_value()
+
+    def _set_save_button_visibility(self):
+        """Show the save button if there are new settings to save"""
+        # Get relevant widgets
+        voltage = self.builder.get_object("voltage-combobox")
+        current = self.builder.get_object("current-spinbutton")
         rev = self.builder.get_object("header-sink-save-revealer")
-        rev.set_reveal_child(True)
+
+        # Set visibility
+        rev.set_reveal_child(voltage.get_active_id() != self.voltage
+                             or current.get_value() != self.current)
+
+    def on_voltage_combobox_changed(self, combo):
+        self._set_save_button_visibility()
 
         pdb_send_message(self.serial_port,
                          'set_v {}'.format(int(combo.get_active_text())*1000))
 
     def on_current_spinbutton_changed(self, spin):
-        rev = self.builder.get_object("header-sink-save-revealer")
-        rev.set_reveal_child(True)
+        self._set_save_button_visibility()
 
         pdb_send_message(self.serial_port,
                          'set_i {}'.format(int(spin.get_value()*1000)))
