@@ -233,12 +233,12 @@ class Handler:
         st.set_visible_child(select)
 
     def on_header_sink_save_clicked(self, button):
-        self._store_device_settings()
-        self._set_save_button_visibility()
-
         window = self.builder.get_object("pdb-window")
         try:
             pdb_send_message(window, self.serial_port, 'write')
+
+            self._store_device_settings()
+            self._set_save_button_visibility()
         except:
             self.on_header_sink_back_clicked(None)
 
@@ -264,22 +264,22 @@ class Handler:
                              or current.get_value() != self.current)
 
     def on_voltage_combobox_changed(self, combo):
-        self._set_save_button_visibility()
-
         window = self.builder.get_object("pdb-window")
         try:
             pdb_send_message(window, self.serial_port,
                              'set_v {}'.format(int(combo.get_active_text())*1000))
+
+            self._set_save_button_visibility()
         except:
             self.on_header_sink_back_clicked(None)
 
     def on_current_spinbutton_changed(self, spin):
-        self._set_save_button_visibility()
-
         window = self.builder.get_object("pdb-window")
         try:
             pdb_send_message(window, self.serial_port,
                              'set_i {}'.format(int(spin.get_value()*1000)))
+
+            self._set_save_button_visibility()
         except:
             self.on_header_sink_back_clicked(None)
 
