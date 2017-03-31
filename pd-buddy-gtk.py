@@ -9,21 +9,29 @@ gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gio, GObject, GLib
 
 
-def pdb_send_message(sp, message):
+def pdb_send_message(window, sp, message):
     """Send a message over the serial port and return the response"""
-    # Open the serial port
-    # FIXME handle exceptions
-    sp = serial.Serial(sp.device, baudrate=115200, timeout=0.01)
+    try:
+        # Open the serial port
+        sp = serial.Serial(sp.device, baudrate=115200, timeout=0.01)
 
-    sp.write(bytes(message, 'utf-8') + b'\r\n')
-    sp.flush()
-    answer = sp.readlines()
+        sp.write(bytes(message, 'utf-8') + b'\r\n')
+        sp.flush()
+        answer = sp.readlines()
 
-    sp.close()
+        sp.close()
 
-    # Remove the echoed command and prompt
-    answer = answer[1:-1]
-    return answer
+        # Remove the echoed command and prompt
+        answer = answer[1:-1]
+        return answer
+    except OSError as e:
+        dialog = Gtk.MessageDialog(window, 0, Gtk.MessageType.ERROR,
+                Gtk.ButtonsType.CLOSE, "Error communicating with device")
+        dialog.format_secondary_text(e.strerror)
+        dialog.run()
+
+        dialog.destroy()
+        raise
 
 
 class ListRowModel(GObject.GObject):
@@ -139,7 +147,11 @@ class SelectListRow(Gtk.ListBoxRow):
         self.show_all()
 
     def on_identify_clicked(self, button):
-        pdb_send_message(self.model.serport, 'identify')
+        window = self.get_toplevel()
+        try:
+            pdb_send_message(window, self.model.serport, 'identify')
+        except:
+            return
 
 
 class Handler:
@@ -172,8 +184,12 @@ class Handler:
 
         self.serial_port = serport
 
-        pdb_send_message(self.serial_port, 'load')
-        tmpcfg = pdb_send_message(self.serial_port, 'get_tmpcfg')
+        window = self.builder.get_object("pdb-window")
+        try:
+            pdb_send_message(window, self.serial_port, 'load')
+            tmpcfg = pdb_send_message(window, self.serial_port, 'get_tmpcfg')
+        except:
+            return
 
         # Get voltage and current from device and load them into the GUI
         for line in tmpcfg:
@@ -205,6 +221,8 @@ class Handler:
         st.set_visible_child(sink)
 
     def on_header_sink_back_clicked(self, data):
+        self.serial_port = None
+
         # Show the Select page
         hst = self.builder.get_object("header-stack")
         hselect = self.builder.get_object("header-select")
@@ -218,7 +236,11 @@ class Handler:
         self._store_device_settings()
         self._set_save_button_visibility()
 
-        pdb_send_message(self.serial_port, 'write')
+        window = self.builder.get_object("pdb-window")
+        try:
+            pdb_send_message(window, self.serial_port, 'write')
+        except:
+            self.on_header_sink_back_clicked(None)
 
     def _store_device_settings(self):
         """Store the settings that were loaded from the device"""
@@ -244,14 +266,22 @@ class Handler:
     def on_voltage_combobox_changed(self, combo):
         self._set_save_button_visibility()
 
-        pdb_send_message(self.serial_port,
-                         'set_v {}'.format(int(combo.get_active_text())*1000))
+        window = self.builder.get_object("pdb-window")
+        try:
+            pdb_send_message(window, self.serial_port,
+                             'set_v {}'.format(int(combo.get_active_text())*1000))
+        except:
+            self.on_header_sink_back_clicked(None)
 
     def on_current_spinbutton_changed(self, spin):
         self._set_save_button_visibility()
 
-        pdb_send_message(self.serial_port,
-                         'set_i {}'.format(int(spin.get_value()*1000)))
+        window = self.builder.get_object("pdb-window")
+        try:
+            pdb_send_message(window, self.serial_port,
+                             'set_i {}'.format(int(spin.get_value()*1000)))
+        except:
+            self.on_header_sink_back_clicked(None)
 
 class Application(Gtk.Application):
 
