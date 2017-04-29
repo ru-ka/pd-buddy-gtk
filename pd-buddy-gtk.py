@@ -162,6 +162,7 @@ class Handler:
         self.serial_port = None
         self.voltage = None
         self.current = None
+        self.giveback = None
         self.selectlist = None
 
     def on_pdb_window_realize(self, *args):
@@ -183,6 +184,7 @@ class Handler:
         # Get voltage and current widgets
         voltage = self.builder.get_object("voltage-combobox")
         current = self.builder.get_object("current-spinbutton")
+        giveback = self.builder.get_object("giveback-toggle")
 
         self.serial_port = serport
 
@@ -195,7 +197,14 @@ class Handler:
 
         # Get voltage and current from device and load them into the GUI
         for line in tmpcfg:
-            if line.startswith(b'v:'):
+            if line.startswith(b'flags:'):
+                line = line.split()[1:]
+                try:
+                    line.index(b'GiveBack')
+                    giveback.set_active(True)
+                except:
+                    giveback.set_active(False)
+            elif line.startswith(b'v:'):
                 v = line.split()[1]
                 if v == b'5.00':
                     voltage.set_active_id('voltage-five')
@@ -266,21 +275,25 @@ class Handler:
         # Get voltage and current widgets
         voltage = self.builder.get_object("voltage-combobox")
         current = self.builder.get_object("current-spinbutton")
+        giveback = self.builder.get_object("giveback-toggle")
 
         # Remember the loaded settings
         self.voltage = voltage.get_active_id()
         self.current = current.get_value()
+        self.giveback = giveback.get_active()
 
     def _set_save_button_visibility(self):
         """Show the save button if there are new settings to save"""
         # Get relevant widgets
         voltage = self.builder.get_object("voltage-combobox")
         current = self.builder.get_object("current-spinbutton")
+        giveback = self.builder.get_object("giveback-toggle")
         rev = self.builder.get_object("header-sink-save-revealer")
 
         # Set visibility
         rev.set_reveal_child(voltage.get_active_id() != self.voltage
-                             or current.get_value() != self.current)
+                             or current.get_value() != self.current
+                             or giveback.get_active() != self.giveback)
 
     def on_voltage_combobox_changed(self, combo):
         window = self.builder.get_object("pdb-window")
@@ -299,6 +312,15 @@ class Handler:
             pdb_send_message(self.serial_port,
                              'set_i {}'.format(int(spin.get_value()*1000)),
                              window)
+
+            self._set_save_button_visibility()
+        except:
+            self.on_header_sink_back_clicked(None)
+
+    def on_giveback_toggle_toggled(self, toggle):
+        window = self.builder.get_object("pdb-window")
+        try:
+            pdb_send_message(self.serial_port, 'toggle_giveback', window)
 
             self._set_save_button_visibility()
         except:
