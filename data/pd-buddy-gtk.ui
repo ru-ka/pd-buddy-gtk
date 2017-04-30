@@ -140,6 +140,7 @@
                                   <object class="GtkLabel">
                                     <property name="visible">True</property>
                                     <property name="can_focus">False</property>
+                                    <property name="halign">start</property>
                                     <property name="label" translatable="yes">A</property>
                                   </object>
                                   <packing>
@@ -151,6 +152,7 @@
                                   <object class="GtkLabel">
                                     <property name="visible">True</property>
                                     <property name="can_focus">False</property>
+                                    <property name="halign">start</property>
                                     <property name="label" translatable="yes">V</property>
                                   </object>
                                   <packing>
@@ -196,8 +198,7 @@
                                     <property name="visible">True</property>
                                     <property name="can_focus">False</property>
                                     <property name="halign">start</property>
-                                    <property name="orientation">vertical</property>
-                                    <property name="layout_style">end</property>
+                                    <property name="layout_style">expand</property>
                                     <child>
                                       <object class="GtkToggleButton" id="giveback-toggle">
                                         <property name="label" translatable="yes">GiveBack</property>

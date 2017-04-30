@@ -139,7 +139,8 @@ class SelectListRow(Gtk.ListBoxRow):
         self._builder.connect_signals(self)
 
         name = self._builder.get_object("name")
-        name.set_text(self.model.serport.description)
+        name.set_text('{} {}'.format(self.model.serport.manufacturer,
+                                     self.model.serport.product))
 
         device = self._builder.get_object("device")
         device.set_text(self.model.serport.device)
@@ -224,6 +225,7 @@ class Handler:
         # Show the Sink page
         hst = self.builder.get_object("header-stack")
         hsink = self.builder.get_object("header-sink")
+        hsink.set_title('{} {}'.format(serport.manufacturer, serport.product))
         hsink.set_subtitle(serport.device)
         hst.set_visible_child(hsink)
 
