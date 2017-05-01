@@ -328,6 +328,7 @@ class Handler:
         except:
             self.on_header_sink_back_clicked(None)
 
+
 class Application(Gtk.Application):
 
     def __init__(self, *args, **kwargs):
@@ -354,6 +355,10 @@ class Application(Gtk.Application):
 
         self.window.present()
 
-if __name__ == "__main__":
+
+def run():
     app = Application()
     app.run(sys.argv)
+
+if __name__ == "__main__":
+    run()
