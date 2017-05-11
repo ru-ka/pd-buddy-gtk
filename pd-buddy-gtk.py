@@ -182,6 +182,9 @@ class Handler:
             comms_error_dialog(window, e)
             return
 
+        self._store_device_settings()
+        self._set_save_button_visibility()
+
         # Set giveback button state
         giveback.set_active(bool(self.cfg.flags & pdbuddy.SinkFlags.GIVEBACK))
 
@@ -196,9 +199,6 @@ class Handler:
             voltage.set_active_id('voltage-twenty')
 
         current.set_value(self.cfg.i/1000)
-
-        self._store_device_settings()
-        self._set_save_button_visibility()
 
         # Show the Sink page
         hst = self.builder.get_object("header-stack")
@@ -256,28 +256,19 @@ class Handler:
 
     def _store_device_settings(self):
         """Store the settings that were loaded from the device"""
-        # Get voltage and current widgets
-        voltage = self.builder.get_object("voltage-combobox")
-        current = self.builder.get_object("current-spinbutton")
-        giveback = self.builder.get_object("giveback-toggle")
-
-        # Remember the loaded settings
-        self.voltage = voltage.get_active_id()
-        self.current = current.get_value()
-        self.giveback = giveback.get_active()
+        self.cfg_clean = pdbuddy.SinkConfig(
+                status=self.cfg.status,
+                flags=self.cfg.flags,
+                v=self.cfg.v,
+                i=self.cfg.i)
 
     def _set_save_button_visibility(self):
         """Show the save button if there are new settings to save"""
         # Get relevant widgets
-        voltage = self.builder.get_object("voltage-combobox")
-        current = self.builder.get_object("current-spinbutton")
-        giveback = self.builder.get_object("giveback-toggle")
         rev = self.builder.get_object("header-sink-save-revealer")
 
         # Set visibility
-        rev.set_reveal_child(voltage.get_active_id() != self.voltage
-                             or current.get_value() != self.current
-                             or giveback.get_active() != self.giveback)
+        rev.set_reveal_child(self.cfg != self.cfg_clean)
 
     def on_voltage_combobox_changed(self, combo):
         self.cfg.v = int(combo.get_active_text()) * 1000
