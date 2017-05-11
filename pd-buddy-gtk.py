@@ -177,25 +177,25 @@ class Handler:
         try:
             with pdbuddy.Sink(self.serial_port) as pdbs:
                 pdbs.load()
-                tmpcfg = pdbs.get_tmpcfg()
+                self.cfg = pdbs.get_tmpcfg()
         except OSError as e:
             comms_error_dialog(window, e)
             return
 
         # Set giveback button state
-        giveback.set_active(bool(tmpcfg.flags & pdbuddy.SinkFlags.GIVEBACK))
+        giveback.set_active(bool(self.cfg.flags & pdbuddy.SinkFlags.GIVEBACK))
 
         # Get voltage and current from device and load them into the GUI
-        if tmpcfg.v == 5000:
+        if self.cfg.v == 5000:
             voltage.set_active_id('voltage-five')
-        elif tmpcfg.v == 9000:
+        elif self.cfg.v == 9000:
             voltage.set_active_id('voltage-nine')
-        elif tmpcfg.v == 15000:
+        elif self.cfg.v == 15000:
             voltage.set_active_id('voltage-fifteen')
-        if tmpcfg.v == 20000:
+        if self.cfg.v == 20000:
             voltage.set_active_id('voltage-twenty')
 
-        current.set_value(tmpcfg.i/1000)
+        current.set_value(self.cfg.i/1000)
 
         self._store_device_settings()
         self._set_save_button_visibility()
@@ -245,6 +245,7 @@ class Handler:
         window = self.builder.get_object("pdb-window")
         try:
             with pdbuddy.Sink(self.serial_port) as pdbs:
+                pdbs.set_tmpcfg(self.cfg)
                 pdbs.write()
 
             self._store_device_settings()
@@ -279,37 +280,22 @@ class Handler:
                              or giveback.get_active() != self.giveback)
 
     def on_voltage_combobox_changed(self, combo):
-        window = self.builder.get_object("pdb-window")
-        try:
-            with pdbuddy.Sink(self.serial_port) as pdbs:
-                pdbs.set_v(int(combo.get_active_text())*1000)
+        self.cfg.v = int(combo.get_active_text()) * 1000
 
-            self._set_save_button_visibility()
-        except OSError as e:
-            comms_error_dialog(window, e)
-            self.on_header_sink_back_clicked(None)
+        self._set_save_button_visibility()
 
     def on_current_spinbutton_changed(self, spin):
-        window = self.builder.get_object("pdb-window")
-        try:
-            with pdbuddy.Sink(self.serial_port) as pdbs:
-                pdbs.set_i(int(spin.get_value())*1000)
+        self.cfg.i = int(spin.get_value() * 1000)
 
-            self._set_save_button_visibility()
-        except OSError as e:
-            comms_error_dialog(window, e)
-            self.on_header_sink_back_clicked(None)
+        self._set_save_button_visibility()
 
     def on_giveback_toggle_toggled(self, toggle):
-        window = self.builder.get_object("pdb-window")
-        try:
-            with pdbuddy.Sink(self.serial_port) as pdbs:
-                pdbs.toggle_giveback()
+        if toggle.get_active():
+            self.cfg.flags |= pdbuddy.SinkFlags.GIVEBACK
+        else:
+            self.cfg.flags &= ~pdbuddy.SinkFlags.GIVEBACK
 
-            self._set_save_button_visibility()
-        except OSError as e:
-            comms_error_dialog(window, e)
-            self.on_header_sink_back_clicked(None)
+        self._set_save_button_visibility()
 
 
 class Application(Gtk.Application):
