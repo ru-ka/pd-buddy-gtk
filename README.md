@@ -10,7 +10,7 @@ but older versions may work.
 * GTK+ 3.22
 * Python 3.6
 * python-gobject 3.22
-* pyserial 3.2
+* pd-buddy-python 0.1
 
 ## Usage
 

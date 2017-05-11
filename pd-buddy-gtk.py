@@ -2,37 +2,19 @@
 
 import sys
 
-import serial
-import serial.tools.list_ports
+import pdbuddy
 import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gio, GObject, GLib
 
 
-def pdb_send_message(sp, message, window=None):
-    """Send a message over the serial port and return the response"""
-    try:
-        # Open the serial port
-        sp = serial.Serial(sp.device, baudrate=115200, timeout=0.01)
+def comms_error_dialog(parent, e):
+    dialog = Gtk.MessageDialog(window, 0, Gtk.MessageType.ERROR,
+            Gtk.ButtonsType.CLOSE, "Error communicating with device")
+    dialog.format_secondary_text(e.strerror)
+    dialog.run()
 
-        sp.write(bytes(message, 'utf-8') + b'\r\n')
-        sp.flush()
-        answer = sp.readlines()
-
-        sp.close()
-
-        # Remove the echoed command and prompt
-        answer = answer[1:-1]
-        return answer
-    except OSError as e:
-        if window is not None:
-            dialog = Gtk.MessageDialog(window, 0, Gtk.MessageType.ERROR,
-                    Gtk.ButtonsType.CLOSE, "Error communicating with device")
-            dialog.format_secondary_text(e.strerror)
-            dialog.run()
-
-            dialog.destroy()
-        raise
+    dialog.destroy()
 
 
 class ListRowModel(GObject.GObject):
@@ -46,7 +28,7 @@ class SelectListStore(Gio.ListStore):
 
     def update_items(self):
         # Get a list of serial ports
-        serports = list(serial.tools.list_ports.grep("1209:0001"))
+        serports = list(pdbuddy.Sink.get_devices())
 
         # Mark ports to remove or add
         remove_list = []
@@ -151,8 +133,10 @@ class SelectListRow(Gtk.ListBoxRow):
     def on_identify_clicked(self, button):
         window = self.get_toplevel()
         try:
-            pdb_send_message(self.model.serport, 'identify', window)
-        except:
+            with pdbuddy.Sink(self.model.serport) as pdbs:
+                pdbs.identify()
+        except OSError as e:
+            comms_error_dialog(window, e)
             return
 
 
@@ -191,33 +175,27 @@ class Handler:
 
         window = self.builder.get_object("pdb-window")
         try:
-            pdb_send_message(self.serial_port, 'load', window)
-            tmpcfg = pdb_send_message(self.serial_port, 'get_tmpcfg', window)
-        except:
+            with pdbuddy.Sink(self.serial_port) as pdbs:
+                pdbs.load()
+                tmpcfg = pdbs.get_tmpcfg()
+        except OSError as e:
+            comms_error_dialog(window, e)
             return
 
+        # Set giveback button state
+        giveback.set_active(bool(tmpcfg.flags & pdbuddy.SinkFlags.GIVEBACK))
+
         # Get voltage and current from device and load them into the GUI
-        for line in tmpcfg:
-            if line.startswith(b'flags:'):
-                line = line.split()[1:]
-                try:
-                    line.index(b'GiveBack')
-                    giveback.set_active(True)
-                except:
-                    giveback.set_active(False)
-            elif line.startswith(b'v:'):
-                v = line.split()[1]
-                if v == b'5.00':
-                    voltage.set_active_id('voltage-five')
-                elif v == b'9.00':
-                    voltage.set_active_id('voltage-nine')
-                elif v == b'15.00':
-                    voltage.set_active_id('voltage-fifteen')
-                if v == b'20.00':
-                    voltage.set_active_id('voltage-twenty')
-            elif line.startswith(b'i:'):
-                i = float(line.split()[1])
-                current.set_value(i)
+        if tmpcfg.v == 5000:
+            voltage.set_active_id('voltage-five')
+        elif tmpcfg.v == 9000:
+            voltage.set_active_id('voltage-nine')
+        elif tmpcfg.v == 15000:
+            voltage.set_active_id('voltage-fifteen')
+        if tmpcfg.v == 20000:
+            voltage.set_active_id('voltage-twenty')
+
+        current.set_value(tmpcfg.i/1000)
 
         self._store_device_settings()
         self._set_save_button_visibility()
@@ -243,7 +221,8 @@ class Handler:
             self.on_header_sink_back_clicked(None)
             return False
         try:
-            pdb_send_message(self.serial_port, '')
+            with pdbuddy.Sink(self.serial_port) as pdbs:
+                pdbs.send_command("")
             return True
         except:
             self.selectlist.reload()
@@ -265,11 +244,13 @@ class Handler:
     def on_header_sink_save_clicked(self, button):
         window = self.builder.get_object("pdb-window")
         try:
-            pdb_send_message(self.serial_port, 'write', window)
+            with pdbuddy.Sink(self.serial_port) as pdbs:
+                pdbs.write()
 
             self._store_device_settings()
             self._set_save_button_visibility()
-        except:
+        except OSError as e:
+            comms_error_dialog(window, e)
             self.on_header_sink_back_clicked(None)
 
     def _store_device_settings(self):
@@ -300,32 +281,34 @@ class Handler:
     def on_voltage_combobox_changed(self, combo):
         window = self.builder.get_object("pdb-window")
         try:
-            pdb_send_message(self.serial_port,
-                             'set_v {}'.format(int(combo.get_active_text())*1000),
-                             window)
+            with pdbuddy.Sink(self.serial_port) as pdbs:
+                pdbs.set_v(int(combo.get_active_text())*1000)
 
             self._set_save_button_visibility()
-        except:
+        except OSError as e:
+            comms_error_dialog(window, e)
             self.on_header_sink_back_clicked(None)
 
     def on_current_spinbutton_changed(self, spin):
         window = self.builder.get_object("pdb-window")
         try:
-            pdb_send_message(self.serial_port,
-                             'set_i {}'.format(int(spin.get_value()*1000)),
-                             window)
+            with pdbuddy.Sink(self.serial_port) as pdbs:
+                pdbs.set_i(int(spin.get_value())*1000)
 
             self._set_save_button_visibility()
-        except:
+        except OSError as e:
+            comms_error_dialog(window, e)
             self.on_header_sink_back_clicked(None)
 
     def on_giveback_toggle_toggled(self, toggle):
         window = self.builder.get_object("pdb-window")
         try:
-            pdb_send_message(self.serial_port, 'toggle_giveback', window)
+            with pdbuddy.Sink(self.serial_port) as pdbs:
+                pdbs.toggle_giveback()
 
             self._set_save_button_visibility()
-        except:
+        except OSError as e:
+            comms_error_dialog(window, e)
             self.on_header_sink_back_clicked(None)
 
 
