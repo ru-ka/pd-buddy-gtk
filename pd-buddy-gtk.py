@@ -180,9 +180,13 @@ class Handler:
                 try:
                     pdbs.load()
                 except KeyError:
-                    # If there's no configuration, we don't want to fail
-                    pass
-                self.cfg = pdbs.get_tmpcfg()
+                    # If there's no configuration, we don't want to fail.  We
+                    # do want to display no configuration though
+                    self.cfg = pdbuddy.SinkConfig(
+                            status=pdbuddy.SinkStatus.VALID,
+                            flags=pdbuddy.SinkFlags.NONE, v=0, i=0)
+                else:
+                    self.cfg = pdbs.get_tmpcfg()
         except OSError as e:
             comms_error_dialog(window, e)
             return
