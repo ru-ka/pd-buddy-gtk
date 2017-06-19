@@ -177,7 +177,11 @@ class Handler:
         window = self.builder.get_object("pdb-window")
         try:
             with pdbuddy.Sink(self.serial_port) as pdbs:
-                pdbs.load()
+                try:
+                    pdbs.load()
+                except KeyError:
+                    # If there's no configuration, we don't want to fail
+                    pass
                 self.cfg = pdbs.get_tmpcfg()
         except OSError as e:
             comms_error_dialog(window, e)
