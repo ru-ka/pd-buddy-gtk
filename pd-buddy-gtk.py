@@ -202,6 +202,8 @@ class Handler:
             voltage.set_active_id('voltage-five')
         elif self.cfg.v == 9000:
             voltage.set_active_id('voltage-nine')
+        elif self.cfg.v == 12000:
+            voltage.set_active_id('voltage-twelve')
         elif self.cfg.v == 15000:
             voltage.set_active_id('voltage-fifteen')
         if self.cfg.v == 20000:

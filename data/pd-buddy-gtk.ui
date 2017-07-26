@@ -167,6 +167,7 @@
                                     <items>
                                       <item id="voltage-five" translatable="yes">5</item>
                                       <item id="voltage-nine" translatable="yes">9</item>
+                                      <item id="voltage-twelve" translatable="yes">12</item>
                                       <item id="voltage-fifteen" translatable="yes">15</item>
                                       <item id="voltage-twenty" translatable="yes">20</item>
                                     </items>
