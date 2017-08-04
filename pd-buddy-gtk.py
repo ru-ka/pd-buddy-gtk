@@ -338,7 +338,11 @@ class Handler:
             caps = pdbs.get_source_cap()
             s = ""
             for i, cap in enumerate(caps):
-                s += "PDO {}: {}\n".format(i+1, cap)
+                s += "PDO {}: {}".format(i+1, cap)
+                if i < len(caps) - 1:
+                    s += "\n"
+            if not s:
+                s = "No Source_Capabilities"
             flags = Gtk.DialogFlags.DESTROY_WITH_PARENT;
             window = self.builder.get_object("pdb-window")
             dialog = Gtk.MessageDialog(window,
@@ -346,7 +350,7 @@ class Handler:
                              Gtk.MessageType.INFO,
                              Gtk.ButtonsType.CLOSE,
                              None)
-            dialog.set_markup("<span font_family='monospace'>{}</span>".format(s[:-1]))
+            dialog.set_markup("<span font_family='monospace'>{}</span>".format(s))
             dialog.run()
             dialog.destroy()
 
