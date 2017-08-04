@@ -336,8 +336,19 @@ class Handler:
         # Get the source capabilities
         with pdbuddy.Sink(self.serial_port) as pdbs:
             caps = pdbs.get_source_cap()
+            s = ""
             for i, cap in enumerate(caps):
-                print("PDO {}: {}".format(i+1, cap))
+                s += "PDO {}: {}\n".format(i+1, cap)
+            flags = Gtk.DialogFlags.DESTROY_WITH_PARENT;
+            window = self.builder.get_object("pdb-window")
+            dialog = Gtk.MessageDialog(window,
+                             flags,
+                             Gtk.MessageType.INFO,
+                             Gtk.ButtonsType.CLOSE,
+                             None)
+            dialog.set_markup("<span font_family='monospace'>{}</span>".format(s[:-1]))
+            dialog.run()
+            dialog.destroy()
 
 
 class Application(Gtk.Application):
