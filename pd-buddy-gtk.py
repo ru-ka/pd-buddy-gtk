@@ -52,6 +52,18 @@ class SelectListStore(Gio.ListStore):
                 self.append(ListRowModel(port))
 
 
+def list_box_update_header_func(row, before, data):
+    """Add a separator header to all rows but the first one"""
+    if before is None:
+        row.set_header(None)
+        return
+
+    current = row.get_header()
+    if current is None:
+        current = Gtk.Separator.new(Gtk.Orientation.HORIZONTAL)
+        row.set_header(current)
+
+
 class SelectList(Gtk.Box):
     __gsignals__ = {
         'row-activated': (GObject.SIGNAL_RUN_FIRST, None,
@@ -70,21 +82,10 @@ class SelectList(Gtk.Box):
         sl = self._builder.get_object("select-list")
 
         # Add separators to the list
-        sl.set_header_func(self._update_header_func, None)
+        sl.set_header_func(list_box_update_header_func, None)
 
         self.pack_start(self._builder.get_object("select-stack"), True, True, 0)
         self.show_all()
-
-    def _update_header_func(self, row, before, data):
-        """Add a separator header to all rows but the first one"""
-        if before is None:
-            row.set_header(None)
-            return
-
-        current = row.get_header()
-        if current is None:
-            current = Gtk.Separator.new(Gtk.Orientation.HORIZONTAL)
-            row.set_header(current)
 
     def bind_model(self, model, func):
         self._builder.get_object("select-list").bind_model(model, func)
@@ -163,14 +164,24 @@ class Handler:
 
         self.selectlist.connect("row-activated", self.on_select_list_row_activated)
 
+        # Add separators to the configuration page lists
+        sc_list = self.builder.get_object("sink-config-list")
+        sc_list.set_header_func(list_box_update_header_func, None)
+
+        pd_list = self.builder.get_object("power-delivery-list")
+        pd_list.set_header_func(list_box_update_header_func, None)
+
     def on_pdb_window_delete_event(self, *args):
         Gtk.main_quit(*args)
 
     def on_select_list_row_activated(self, selectlist, serport):
-        # Get voltage and current widgets
+        # Get relevant widgets
         voltage = self.builder.get_object("voltage-combobox")
         current = self.builder.get_object("current-spinbutton")
         giveback = self.builder.get_object("giveback-toggle")
+        pd_frame = self.builder.get_object("power-delivery-frame")
+        output = self.builder.get_object("output-switch")
+        cap_label = self.builder.get_object("short-source-cap-label")
 
         self.serial_port = serport
 
@@ -210,6 +221,21 @@ class Handler:
             voltage.set_active_id('voltage-twenty')
 
         current.set_value(self.cfg.i/1000)
+
+        # Set PD frame visibility and output switch state
+        try:
+            with pdbuddy.Sink(self.serial_port) as pdbs:
+                output.set_state(pdbs.output)
+        except KeyError:
+            pd_frame.set_visible(False)
+        else:
+            pd_frame.set_visible(True)
+
+            # Update the text in the capability label
+            # TODO: do this repeatedly
+            with pdbuddy.Sink(self.serial_port) as pdbs:
+                caps = pdbs.get_source_cap()
+            cap_label.set_text('{} PDOs'.format(len(caps)))
 
         # Show the Sink page
         hst = self.builder.get_object("header-stack")
@@ -254,7 +280,7 @@ class Handler:
         select = self.builder.get_object("select")
         st.set_visible_child(select)
 
-    def on_header_sink_save_clicked(self, button):
+    def on_sink_save_clicked(self, button):
         window = self.builder.get_object("pdb-window")
         try:
             with pdbuddy.Sink(self.serial_port) as pdbs:
@@ -274,7 +300,7 @@ class Handler:
     def _set_save_button_visibility(self):
         """Show the save button if there are new settings to save"""
         # Get relevant widgets
-        rev = self.builder.get_object("header-sink-save-revealer")
+        rev = self.builder.get_object("sink-save-revealer")
 
         # Set visibility
         rev.set_reveal_child(self.cfg != self.cfg_clean)
@@ -296,6 +322,22 @@ class Handler:
             self.cfg = self.cfg._replace(flags=self.cfg.flags&~pdbuddy.SinkFlags.GIVEBACK)
 
         self._set_save_button_visibility()
+
+    def on_output_switch_state_set(self, switch, state):
+        with pdbuddy.Sink(self.serial_port) as pdbs:
+            pdbs.output = state
+
+    def on_source_cap_row_activated(self, box, row):
+        # Find which row was clicked
+        sc_row = self.builder.get_object("source-cap-row")
+        if row != sc_row:
+            # If it's not the source-cap-row, leave
+            return
+        # Get the source capabilities
+        with pdbuddy.Sink(self.serial_port) as pdbs:
+            caps = pdbs.get_source_cap()
+            for i, cap in enumerate(caps):
+                print("PDO {}: {}".format(i+1, cap))
 
 
 class Application(Gtk.Application):
