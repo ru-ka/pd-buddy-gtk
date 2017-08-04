@@ -269,11 +269,7 @@ class Handler:
 
     def _store_device_settings(self):
         """Store the settings that were loaded from the device"""
-        self.cfg_clean = pdbuddy.SinkConfig(
-                status=self.cfg.status,
-                flags=self.cfg.flags,
-                v=self.cfg.v,
-                i=self.cfg.i)
+        self.cfg_clean = self.cfg
 
     def _set_save_button_visibility(self):
         """Show the save button if there are new settings to save"""
