@@ -284,20 +284,20 @@ class Handler:
         rev.set_reveal_child(self.cfg != self.cfg_clean)
 
     def on_voltage_combobox_changed(self, combo):
-        self.cfg.v = int(combo.get_active_text()) * 1000
+        self.cfg = self.cfg._replace(v=int(combo.get_active_text()) * 1000)
 
         self._set_save_button_visibility()
 
     def on_current_spinbutton_changed(self, spin):
-        self.cfg.i = int(spin.get_value() * 1000)
+        self.cfg = self.cfg._replace(i=int(spin.get_value() * 1000))
 
         self._set_save_button_visibility()
 
     def on_giveback_toggle_toggled(self, toggle):
         if toggle.get_active():
-            self.cfg.flags |= pdbuddy.SinkFlags.GIVEBACK
+            self.cfg = self.cfg._replace(flags=self.cfg.flags|pdbuddy.SinkFlags.GIVEBACK)
         else:
-            self.cfg.flags &= ~pdbuddy.SinkFlags.GIVEBACK
+            self.cfg = self.cfg._replace(flags=self.cfg.flags&~pdbuddy.SinkFlags.GIVEBACK)
 
         self._set_save_button_visibility()
 
