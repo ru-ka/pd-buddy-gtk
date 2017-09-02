@@ -185,8 +185,10 @@
                                                 <property name="can_focus">False</property>
                                                 <property name="halign">start</property>
                                                 <property name="hexpand">True</property>
-                                                <property name="label" translatable="yes">Voltage</property>
+                                                <property name="label" translatable="yes">_Voltage</property>
+                                                <property name="use_underline">True</property>
                                                 <property name="justify">right</property>
+                                                <property name="mnemonic_widget">voltage-combobox</property>
                                               </object>
                                               <packing>
                                                 <property name="left_attach">0</property>
@@ -249,8 +251,10 @@
                                                 <property name="can_focus">False</property>
                                                 <property name="halign">start</property>
                                                 <property name="hexpand">True</property>
-                                                <property name="label" translatable="yes">Current</property>
+                                                <property name="label" translatable="yes">_Current</property>
+                                                <property name="use_underline">True</property>
                                                 <property name="justify">right</property>
+                                                <property name="mnemonic_widget">current-spinbutton</property>
                                               </object>
                                               <packing>
                                                 <property name="left_attach">0</property>
@@ -327,10 +331,11 @@
                                                 <property name="layout_style">expand</property>
                                                 <child>
                                                   <object class="GtkToggleButton" id="giveback-toggle">
-                                                    <property name="label" translatable="yes">GiveBack</property>
+                                                    <property name="label" translatable="yes">_GiveBack</property>
                                                     <property name="visible">True</property>
                                                     <property name="can_focus">True</property>
                                                     <property name="receives_default">True</property>
+                                                    <property name="use_underline">True</property>
                                                     <signal name="toggled" handler="on_giveback_toggle_toggled" swapped="no"/>
                                                   </object>
                                                   <packing>
@@ -411,8 +416,10 @@
                                                 <property name="can_focus">False</property>
                                                 <property name="halign">start</property>
                                                 <property name="hexpand">True</property>
-                                                <property name="label" translatable="yes">Output</property>
+                                                <property name="label" translatable="yes">_Output</property>
+                                                <property name="use_underline">True</property>
                                                 <property name="justify">right</property>
+                                                <property name="mnemonic_widget">output-switch</property>
                                               </object>
                                               <packing>
                                                 <property name="left_attach">0</property>
@@ -455,8 +462,10 @@
                                                 <property name="visible">True</property>
                                                 <property name="can_focus">False</property>
                                                 <property name="halign">start</property>
-                                                <property name="label" translatable="yes">Source Capabilities</property>
+                                                <property name="label" translatable="yes">_Source Capabilities</property>
+                                                <property name="use_underline">True</property>
                                                 <property name="justify">right</property>
+                                                <property name="mnemonic_widget">source-cap-row</property>
                                               </object>
                                               <packing>
                                                 <property name="left_attach">0</property>
