@@ -339,29 +339,50 @@ class Handler:
         if row != sc_row:
             # If it's not the source-cap-row, leave
             return
+
         # Get the source capabilities
         with pdbuddy.Sink(self.serial_port) as pdbs:
             caps = pdbs.get_source_cap()
-            s = ""
-            for i, cap in enumerate(caps):
-                s += "PDO {}: {}".format(i+1, cap)
-                if i < len(caps) - 1:
-                    s += "\n"
-            if not s:
-                s = "No Source_Capabilities"
-            flags = Gtk.DialogFlags.DESTROY_WITH_PARENT;
-            window = self.builder.get_object("pdb-window")
-            dialog_builder = Gtk.Builder.new_from_file("data/src-cap-dialog.ui")
-            dialog = dialog_builder.get_object("src-cap-dialog")
-            dialog.set_transient_for(window)
-            #dialog = Gtk.MessageDialog(window,
-            #                 flags,
-            #                 Gtk.MessageType.INFO,
-            #                 Gtk.ButtonsType.CLOSE,
-            #                 None)
-            #dialog.set_markup("<span font_family='monospace'>{}</span>".format(s))
-            dialog.run()
-            dialog.destroy()
+
+        # Create the dialog
+        window = self.builder.get_object("pdb-window")
+        dialog_builder = Gtk.Builder.new_from_file("data/src-cap-dialog.ui")
+        dialog = dialog_builder.get_object("src-cap-dialog")
+        dialog.set_transient_for(window)
+
+        # Populate PD Power
+        d_power = dialog_builder.get_object("power-label")
+        d_power.set_text("{:g} W".format(pdbuddy.calculate_pdp(caps)))
+
+        # Populate Information
+        d_info_header = dialog_builder.get_object("info-header")
+        d_info = dialog_builder.get_object("info-label")
+        # Make the string to display
+        info_str = ""
+        if not caps[0].dual_role_pwr:
+            info_str += "Dual-Role Power\n"
+        if not caps[0].usb_suspend:
+            info_str += "USB Suspend Supported\n"
+        if caps[0].unconstrained_pwr:
+            info_str += "Unconstrained Power\n"
+        if not caps[0].usb_comms:
+            info_str += "USB Communications Capable\n"
+        if not caps[0].dual_role_data:
+            info_str += "Dual-Role Data\n"
+        info_str = info_str[:-1]
+        # Set the text and label visibility
+        d_info.set_text(info_str)
+        d_info_header.set_visible(info_str)
+        d_info.set_visible(info_str)
+
+        # PDO list
+        d_list = dialog_builder.get_object("src-cap-list")
+        d_list.set_header_func(list_box_update_header_func, None)
+        # TODO
+
+        # Show the dialog
+        dialog.run()
+        dialog.destroy()
 
 
 class Application(Gtk.Application):
