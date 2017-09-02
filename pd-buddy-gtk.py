@@ -351,12 +351,15 @@ class Handler:
                 s = "No Source_Capabilities"
             flags = Gtk.DialogFlags.DESTROY_WITH_PARENT;
             window = self.builder.get_object("pdb-window")
-            dialog = Gtk.MessageDialog(window,
-                             flags,
-                             Gtk.MessageType.INFO,
-                             Gtk.ButtonsType.CLOSE,
-                             None)
-            dialog.set_markup("<span font_family='monospace'>{}</span>".format(s))
+            dialog_builder = Gtk.Builder.new_from_file("data/src-cap-dialog.ui")
+            dialog = dialog_builder.get_object("src-cap-dialog")
+            dialog.set_transient_for(window)
+            #dialog = Gtk.MessageDialog(window,
+            #                 flags,
+            #                 Gtk.MessageType.INFO,
+            #                 Gtk.ButtonsType.CLOSE,
+            #                 None)
+            #dialog.set_markup("<span font_family='monospace'>{}</span>".format(s))
             dialog.run()
             dialog.destroy()
 
@@ -371,8 +374,7 @@ class Application(Gtk.Application):
     def do_startup(self):
         Gtk.Application.do_startup(self)
 
-        self.builder = Gtk.Builder()
-        self.builder.add_from_file("data/pd-buddy-gtk.ui")
+        self.builder = Gtk.Builder.new_from_file("data/pd-buddy-gtk.ui")
         self.builder.connect_signals(Handler(self.builder))
 
     def do_activate(self):
