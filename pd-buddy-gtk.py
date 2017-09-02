@@ -181,6 +181,7 @@ class Handler:
         giveback = self.builder.get_object("giveback-toggle")
         pd_frame = self.builder.get_object("power-delivery-frame")
         output = self.builder.get_object("output-switch")
+        cap_warning = self.builder.get_object("source-cap-warning")
         cap_label = self.builder.get_object("short-source-cap-label")
 
         self.serial_port = serport
@@ -231,10 +232,15 @@ class Handler:
         else:
             pd_frame.set_visible(True)
 
-            # Update the text in the capability label
-            # TODO: do this repeatedly
+            # TODO: do these next things repeatedly
+            # Get the Source_Capabilities
             with pdbuddy.Sink(self.serial_port) as pdbs:
                 caps = pdbs.get_source_cap()
+
+            # Update the warning icon
+            cap_warning.set_visible(not pdbuddy.follows_power_rules(caps))
+
+            # Update the text in the capability label
             cap_label.set_text('{:g} W'.format(pdbuddy.calculate_pdp(caps)))
 
         # Show the Sink page

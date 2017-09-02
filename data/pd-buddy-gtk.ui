@@ -455,26 +455,11 @@
                                                 <property name="visible">True</property>
                                                 <property name="can_focus">False</property>
                                                 <property name="halign">start</property>
-                                                <property name="hexpand">True</property>
                                                 <property name="label" translatable="yes">Source Capabilities</property>
                                                 <property name="justify">right</property>
                                               </object>
                                               <packing>
                                                 <property name="left_attach">0</property>
-                                                <property name="top_attach">0</property>
-                                              </packing>
-                                            </child>
-                                            <child>
-                                              <object class="GtkLabel" id="short-source-cap-label">
-                                                <property name="visible">True</property>
-                                                <property name="can_focus">False</property>
-                                                <property name="label" translatable="yes">label</property>
-                                                <style>
-                                                  <class name="dim-label"/>
-                                                </style>
-                                              </object>
-                                              <packing>
-                                                <property name="left_attach">1</property>
                                                 <property name="top_attach">0</property>
                                               </packing>
                                             </child>
@@ -485,7 +470,35 @@
                                                 <property name="icon_name">go-next-symbolic</property>
                                               </object>
                                               <packing>
+                                                <property name="left_attach">3</property>
+                                                <property name="top_attach">0</property>
+                                              </packing>
+                                            </child>
+                                            <child>
+                                              <object class="GtkLabel" id="short-source-cap-label">
+                                                <property name="visible">True</property>
+                                                <property name="can_focus">False</property>
+                                                <property name="halign">end</property>
+                                                <property name="hexpand">True</property>
+                                                <property name="label" translatable="yes">label</property>
+                                                <style>
+                                                  <class name="dim-label"/>
+                                                </style>
+                                              </object>
+                                              <packing>
                                                 <property name="left_attach">2</property>
+                                                <property name="top_attach">0</property>
+                                              </packing>
+                                            </child>
+                                            <child>
+                                              <object class="GtkImage" id="source-cap-warning">
+                                                <property name="can_focus">False</property>
+                                                <property name="tooltip_text" translatable="yes">Source violates the USB PD Power Rules</property>
+                                                <property name="halign">start</property>
+                                                <property name="icon_name">dialog-warning-symbolic</property>
+                                              </object>
+                                              <packing>
+                                                <property name="left_attach">1</property>
                                                 <property name="top_attach">0</property>
                                               </packing>
                                             </child>
