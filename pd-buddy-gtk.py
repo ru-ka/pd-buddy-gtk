@@ -235,7 +235,7 @@ class Handler:
             # TODO: do this repeatedly
             with pdbuddy.Sink(self.serial_port) as pdbs:
                 caps = pdbs.get_source_cap()
-            cap_label.set_text('{} PDOs'.format(len(caps)))
+            cap_label.set_text('{:g} W'.format(pdbuddy.calculate_pdp(caps)))
 
         # Show the Sink page
         hst = self.builder.get_object("header-stack")
