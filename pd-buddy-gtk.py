@@ -17,7 +17,7 @@ def comms_error_dialog(parent, e):
     dialog.destroy()
 
 
-class ListRowModel(GObject.GObject):
+class SelectListRowModel(GObject.GObject):
 
     def __init__(self, serport):
         GObject.GObject.__init__(self)
@@ -49,7 +49,7 @@ class SelectListStore(Gio.ListStore):
         # Add any new ports
         for port in serports:
             if port is not None:
-                self.append(ListRowModel(port))
+                self.append(SelectListRowModel(port))
 
 
 def list_box_update_header_func(row, before, data):
@@ -114,7 +114,6 @@ class SelectListRow(Gtk.ListBoxRow):
 
     def __init__(self, model):
         Gtk.EventBox.__init__(self)
-
         self.model = model
 
         self._builder = Gtk.Builder()
@@ -140,6 +139,97 @@ class SelectListRow(Gtk.ListBoxRow):
         except OSError as e:
             comms_error_dialog(window, e)
             return
+
+
+class PDOListRowModel(GObject.GObject):
+
+    def __init__(self, pdo):
+        GObject.GObject.__init__(self)
+        self.pdo = pdo
+
+
+class PDOListStore(Gio.ListStore):
+
+    def update_items(self, pdo_list):
+        # Clear the list
+        self.remove_all()
+
+        # Add everything from the new list
+        for pdo in pdo_list:
+            self.append(PDOListRowModel(pdo))
+
+
+class PDOListRow(Gtk.ListBoxRow):
+    oc_tooltips = [
+        "I<sub>Peak</sub> = I<sub>OC</sub> (default)",
+        """Overload Capabilities:
+1. I<sub>Peak</sub> = 150% I<sub>OC</sub> for 1 ms @ 5% duty cycle (I<sub>Low</sub> = 97% I<sub>OC</sub> for 19 ms)
+2. I<sub>Peak</sub> = 125% I<sub>OC</sub> for 2 ms @ 10% duty cycle (I<sub>Low</sub> = 97% I<sub>OC</sub> for 18 ms)
+3. I<sub>Peak</sub> = 110% I<sub>OC</sub> for 10 ms @ 50% duty cycle (I<sub>Low</sub> = 90% I<sub>OC</sub> for 10 ms)""",
+        """Overload Capabilities:
+1. I<sub>Peak</sub> = 200% I<sub>OC</sub> for 1 ms @ 5% duty cycle (I<sub>Low</sub> = 95% I<sub>OC</sub> for 19 ms)
+2. I<sub>Peak</sub> = 150% I<sub>OC</sub> for 2 ms @ 10% duty cycle (I<sub>Low</sub> = 94% I<sub>OC</sub> for 18 ms)
+3. I<sub>Peak</sub> = 125% I<sub>OC</sub> for 10 ms @ 50% duty cycle (I<sub>Low</sub> = 75% I<sub>OC</sub> for 10 ms)""",
+        """Overload Capabilities:
+1. I<sub>Peak</sub> = 200% I<sub>OC</sub> for 1 ms @ 5% duty cycle (I<sub>Low</sub> = 95% I<sub>OC</sub> for 19 ms)
+2. I<sub>Peak</sub> = 175% I<sub>OC</sub> for 2 ms @ 10% duty cycle (I<sub>Low</sub> = 92% I<sub>OC</sub> for 18 ms)
+3. I<sub>Peak</sub> = 150% I<sub>OC</sub> for 10 ms @ 50% duty cycle (I<sub>Low</sub> = 50% I<sub>OC</sub> for 10 ms)"""
+    ]
+
+    def __init__(self, model):
+        Gtk.ListBoxRow.__init__(self)
+        self.model = model
+
+        self.set_activatable(False)
+        self.set_selectable(False)
+        self.set_can_focus(False)
+
+        # Make the widgets and populate them with info from the model
+        # Main box
+        box = Gtk.Box(Gtk.Orientation.HORIZONTAL, 12)
+        box.set_homogeneous(True)
+        box.set_margin_left(12)
+        box.set_margin_right(12)
+        box.set_margin_top(6)
+        box.set_margin_bottom(6)
+
+        # Type label
+        type_label = Gtk.Label(model.pdo.pdo_type.capitalize())
+        type_label.set_halign(Gtk.Align.START)
+        box.pack_start(type_label, True, True, 0)
+
+        # Voltage label
+        if model.pdo.pdo_type != "unknown":
+            voltage_label = Gtk.Label("{:g} V".format(model.pdo.v / 1000.0))
+            voltage_label.set_halign(Gtk.Align.END)
+            box.pack_start(voltage_label, True, True, 0)
+
+        # Right box
+        right_box = Gtk.Box(Gtk.Orientation.HORIZONTAL, 6)
+        right_box.set_halign(Gtk.Align.END)
+        if model.pdo.pdo_type != "unknown":
+            # Current label
+            current_label = Gtk.Label("{:g} A".format(model.pdo.i / 1000.0))
+            current_label.set_halign(Gtk.Align.END)
+            right_box.pack_end(current_label, True, False, 0)
+
+            # Over-current image(?)
+            if model.pdo.peak_i > 0:
+                oc_image = Gtk.Image.new_from_icon_name(
+                        "dialog-information-symbolic", Gtk.IconSize.BUTTON)
+                oc_image.set_tooltip_markup(
+                        PDOListRow.oc_tooltips[model.pdo.peak_i])
+                right_box.pack_end(oc_image, True, False, 0)
+        else:
+            # PDO value
+            text_label = Gtk.Label()
+            text_label.set_markup("<tt>{}</tt>".format(model.pdo))
+            right_box.pack_end(text_label, True, False, 0)
+
+        box.pack_end(right_box, True, True, 0)
+
+        self.add(box)
+        self.show_all()
 
 
 class Handler:
@@ -359,15 +449,15 @@ class Handler:
         d_info = dialog_builder.get_object("info-label")
         # Make the string to display
         info_str = ""
-        if not caps[0].dual_role_pwr:
+        if caps[0].dual_role_pwr:
             info_str += "Dual-Role Power\n"
-        if not caps[0].usb_suspend:
+        if caps[0].usb_suspend:
             info_str += "USB Suspend Supported\n"
         if caps[0].unconstrained_pwr:
             info_str += "Unconstrained Power\n"
-        if not caps[0].usb_comms:
+        if caps[0].usb_comms:
             info_str += "USB Communications Capable\n"
-        if not caps[0].dual_role_data:
+        if caps[0].dual_role_data:
             info_str += "Dual-Role Data\n"
         info_str = info_str[:-1]
         # Set the text and label visibility
@@ -378,7 +468,10 @@ class Handler:
         # PDO list
         d_list = dialog_builder.get_object("src-cap-list")
         d_list.set_header_func(list_box_update_header_func, None)
-        # TODO
+
+        model = PDOListStore()
+        d_list.bind_model(model, PDOListRow)
+        model.update_items(caps)
 
         # Show the dialog
         dialog.run()
