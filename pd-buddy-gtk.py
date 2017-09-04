@@ -271,8 +271,10 @@ class Handler:
         giveback = self.builder.get_object("giveback-toggle")
         pd_frame = self.builder.get_object("power-delivery-frame")
         output = self.builder.get_object("output-switch")
+        cap_row = self.builder.get_object("source-cap-row")
         cap_warning = self.builder.get_object("source-cap-warning")
         cap_label = self.builder.get_object("short-source-cap-label")
+        cap_arrow = self.builder.get_object("source-cap-arrow")
 
         self.serial_port = serport
 
@@ -331,7 +333,14 @@ class Handler:
             cap_warning.set_visible(not pdbuddy.follows_power_rules(caps))
 
             # Update the text in the capability label
-            cap_label.set_text('{:g} W'.format(pdbuddy.calculate_pdp(caps)))
+            if caps:
+                cap_label.set_text('{:g} W'.format(pdbuddy.calculate_pdp(caps)))
+            else:
+                cap_label.set_text('None')
+
+            # Make the row insensitive if there are no capabilities
+            cap_row.set_activatable(caps)
+            cap_arrow.set_visible(caps)
 
         # Show the Sink page
         hst = self.builder.get_object("header-stack")
