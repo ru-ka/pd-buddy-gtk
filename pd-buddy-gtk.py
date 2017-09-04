@@ -443,6 +443,9 @@ class Handler:
         # Populate PD Power
         d_power = dialog_builder.get_object("power-label")
         d_power.set_text("{:g} W".format(pdbuddy.calculate_pdp(caps)))
+        # Warning icon
+        cap_warning = dialog_builder.get_object("source-cap-warning")
+        cap_warning.set_visible(not pdbuddy.follows_power_rules(caps))
 
         # Populate Information
         d_info_header = dialog_builder.get_object("info-header")
