@@ -434,6 +434,10 @@ class Handler:
         with pdbuddy.Sink(self.serial_port) as pdbs:
             caps = pdbs.get_source_cap()
 
+        if not caps:
+            # If there are no capabilities, don't show a dialog
+            return
+
         # Create the dialog
         window = self.builder.get_object("pdb-window")
         dialog_builder = Gtk.Builder.new_from_file("data/src-cap-dialog.ui")
