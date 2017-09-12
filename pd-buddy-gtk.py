@@ -194,12 +194,19 @@ class PDOListRow(Gtk.ListBoxRow):
         box.set_margin_bottom(6)
 
         # Type label
-        type_label = Gtk.Label(model.pdo.pdo_type.capitalize())
+        if model.pdo.pdo_type == "fixed":
+            type_text = "Fixed"
+        elif model.pdo.pdo_type == "unknown":
+            type_text = "Unknown"
+        elif model.pdo.pdo_type == "typec_virtual":
+            type_text = "Type-C Current"
+        type_label = Gtk.Label(type_text)
         type_label.set_halign(Gtk.Align.START)
         box.pack_start(type_label, True, True, 0)
 
         # Voltage label
-        if model.pdo.pdo_type != "unknown":
+        if (model.pdo.pdo_type != "unknown"
+                and model.pdo.pdo_type != "typec_virtual"):
             voltage_label = Gtk.Label("{:g} V".format(model.pdo.v / 1000.0))
             voltage_label.set_halign(Gtk.Align.END)
             box.pack_start(voltage_label, True, True, 0)
@@ -214,12 +221,17 @@ class PDOListRow(Gtk.ListBoxRow):
             right_box.pack_end(current_label, True, False, 0)
 
             # Over-current image(?)
-            if model.pdo.peak_i > 0:
-                oc_image = Gtk.Image.new_from_icon_name(
-                        "dialog-information-symbolic", Gtk.IconSize.BUTTON)
-                oc_image.set_tooltip_markup(
-                        PDOListRow.oc_tooltips[model.pdo.peak_i])
-                right_box.pack_end(oc_image, True, False, 0)
+            try:
+                if model.pdo.peak_i > 0:
+                    oc_image = Gtk.Image.new_from_icon_name(
+                            "dialog-information-symbolic", Gtk.IconSize.BUTTON)
+                    oc_image.set_tooltip_markup(
+                            PDOListRow.oc_tooltips[model.pdo.peak_i])
+                    right_box.pack_end(oc_image, True, False, 0)
+            except AttributeError:
+                # If this is a typec_virtual PDO, there's no peak_i attribute.
+                # Not a problem, so just ignore the error.
+                pass
         else:
             # PDO value
             text_label = Gtk.Label()
@@ -465,17 +477,22 @@ class Handler:
         d_info = dialog_builder.get_object("info-label")
         # Make the string to display
         info_str = ""
-        if caps[0].dual_role_pwr:
-            info_str += "Dual-Role Power\n"
-        if caps[0].usb_suspend:
-            info_str += "USB Suspend Supported\n"
-        if caps[0].unconstrained_pwr:
-            info_str += "Unconstrained Power\n"
-        if caps[0].usb_comms:
-            info_str += "USB Communications Capable\n"
-        if caps[0].dual_role_data:
-            info_str += "Dual-Role Data\n"
-        info_str = info_str[:-1]
+        try:
+            if caps[0].dual_role_pwr:
+                info_str += "Dual-Role Power\n"
+            if caps[0].usb_suspend:
+                info_str += "USB Suspend Supported\n"
+            if caps[0].unconstrained_pwr:
+                info_str += "Unconstrained Power\n"
+            if caps[0].usb_comms:
+                info_str += "USB Communications Capable\n"
+            if caps[0].dual_role_data:
+                info_str += "Dual-Role Data\n"
+            info_str = info_str[:-1]
+        except AttributeError:
+            # If we have a typec_virtual PDO, there will be AttributeErrors
+            # from the above.  Not a problem, so just pass.
+            pass
         # Set the text and label visibility
         d_info.set_text(info_str)
         d_info_header.set_visible(info_str)
