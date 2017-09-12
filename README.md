@@ -10,7 +10,7 @@ but older versions may work.
 * GTK+ 3.22
 * Python 3.6
 * python-gobject 3.22
-* pd-buddy-python 0.4.1
+* pd-buddy-python 0.4.2
 
 ## Usage
 
