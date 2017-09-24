@@ -14,19 +14,14 @@
         <property name="valign">center</property>
         <property name="margin_bottom">22</property>
         <property name="orientation">vertical</property>
+        <property name="spacing">12</property>
         <child>
-          <object class="GtkLabel" id="select-none-header">
+          <object class="GtkImage">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
-            <property name="margin_bottom">12</property>
-            <property name="label" translatable="yes">No devices found</property>
-            <attributes>
-              <attribute name="weight" value="bold"/>
-              <attribute name="scale" value="2"/>
-            </attributes>
-            <style>
-              <class name="dim-label"/>
-            </style>
+            <property name="pixel_size">128</property>
+            <property name="icon_name">ac-adapter-symbolic</property>
+            <property name="icon_size">6</property>
           </object>
           <packing>
             <property name="expand">False</property>
@@ -35,13 +30,11 @@
           </packing>
         </child>
         <child>
-          <object class="GtkLabel" id="select-none-text">
+          <object class="GtkLabel" id="select-none-header">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
-            <property name="label" translatable="yes">All connected PD Buddy devices will appear here</property>
-            <style>
-              <class name="dim-label"/>
-            </style>
+            <property name="label" translatable="yes">&lt;b&gt;&lt;span size="large"&gt;No devices found&lt;/span&gt;&lt;/b&gt;</property>
+            <property name="use_markup">True</property>
           </object>
           <packing>
             <property name="expand">False</property>
@@ -49,6 +42,21 @@
             <property name="position">1</property>
           </packing>
         </child>
+        <child>
+          <object class="GtkLabel" id="select-none-text">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="label" translatable="yes">All connected PD Buddy devices will appear here</property>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">2</property>
+          </packing>
+        </child>
+        <style>
+          <class name="dim-label"/>
+        </style>
       </object>
       <packing>
         <property name="name">page1</property>
