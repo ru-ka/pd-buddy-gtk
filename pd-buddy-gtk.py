@@ -464,6 +464,7 @@ class Handler:
         dialog_builder = Gtk.Builder.new_from_file("data/src-cap-dialog.ui")
         dialog = dialog_builder.get_object("src-cap-dialog")
         dialog.set_transient_for(window)
+        dialog.get_content_area().set_border_width(0)
 
         # Populate PD Power
         d_power = dialog_builder.get_object("power-label")
