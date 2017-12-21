@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Generated with glade 3.20.0 -->
+<!-- Generated with glade 3.20.2 -->
 <interface>
   <requires lib="gtk+" version="3.20"/>
   <object class="GtkImage" id="back-image">
@@ -11,6 +11,11 @@
     <property name="upper">5</property>
     <property name="step_increment">1</property>
     <property name="page_increment">10</property>
+  </object>
+  <object class="GtkAdjustment" id="voltage-adjustment">
+    <property name="upper">20</property>
+    <property name="step_increment">0.01</property>
+    <property name="page_increment">1</property>
   </object>
   <object class="GtkApplicationWindow" id="pdb-window">
     <property name="can_focus">False</property>
@@ -188,28 +193,9 @@
                                                 <property name="label" translatable="yes">_Voltage</property>
                                                 <property name="use_underline">True</property>
                                                 <property name="justify">right</property>
-                                                <property name="mnemonic_widget">voltage-combobox</property>
                                               </object>
                                               <packing>
                                                 <property name="left_attach">0</property>
-                                                <property name="top_attach">0</property>
-                                              </packing>
-                                            </child>
-                                            <child>
-                                              <object class="GtkComboBoxText" id="voltage-combobox">
-                                                <property name="visible">True</property>
-                                                <property name="can_focus">False</property>
-                                                <items>
-                                                  <item id="voltage-five" translatable="yes">5</item>
-                                                  <item id="voltage-nine" translatable="yes">9</item>
-                                                  <item id="voltage-twelve" translatable="yes">12</item>
-                                                  <item id="voltage-fifteen" translatable="yes">15</item>
-                                                  <item id="voltage-twenty" translatable="yes">20</item>
-                                                </items>
-                                                <signal name="changed" handler="on_voltage_combobox_changed" swapped="no"/>
-                                              </object>
-                                              <packing>
-                                                <property name="left_attach">1</property>
                                                 <property name="top_attach">0</property>
                                               </packing>
                                             </child>
@@ -222,6 +208,23 @@
                                               </object>
                                               <packing>
                                                 <property name="left_attach">2</property>
+                                                <property name="top_attach">0</property>
+                                              </packing>
+                                            </child>
+                                            <child>
+                                              <object class="GtkSpinButton" id="voltage-spinbutton">
+                                                <property name="visible">True</property>
+                                                <property name="can_focus">True</property>
+                                                <property name="width_chars">5</property>
+                                                <property name="text" translatable="yes">0.00</property>
+                                                <property name="input_purpose">number</property>
+                                                <property name="adjustment">voltage-adjustment</property>
+                                                <property name="digits">2</property>
+                                                <property name="numeric">True</property>
+                                                <signal name="value-changed" handler="on_voltage_spinbutton_changed" swapped="no"/>
+                                              </object>
+                                              <packing>
+                                                <property name="left_attach">1</property>
                                                 <property name="top_attach">0</property>
                                               </packing>
                                             </child>
@@ -266,6 +269,7 @@
                                                 <property name="visible">True</property>
                                                 <property name="can_focus">True</property>
                                                 <property name="margin_left">12</property>
+                                                <property name="width_chars">5</property>
                                                 <property name="input_purpose">number</property>
                                                 <property name="adjustment">current-adjustment</property>
                                                 <property name="digits">2</property>

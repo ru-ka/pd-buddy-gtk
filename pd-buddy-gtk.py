@@ -278,7 +278,7 @@ class Handler:
 
     def on_select_list_row_activated(self, selectlist, serport):
         # Get relevant widgets
-        voltage = self.builder.get_object("voltage-combobox")
+        voltage = self.builder.get_object("voltage-spinbutton")
         current = self.builder.get_object("current-spinbutton")
         giveback = self.builder.get_object("giveback-toggle")
         pd_frame = self.builder.get_object("power-delivery-frame")
@@ -314,16 +314,7 @@ class Handler:
         giveback.set_active(bool(self.cfg.flags & pdbuddy.SinkFlags.GIVEBACK))
 
         # Get voltage and current from device and load them into the GUI
-        if self.cfg.v == 5000:
-            voltage.set_active_id('voltage-five')
-        elif self.cfg.v == 9000:
-            voltage.set_active_id('voltage-nine')
-        elif self.cfg.v == 12000:
-            voltage.set_active_id('voltage-twelve')
-        elif self.cfg.v == 15000:
-            voltage.set_active_id('voltage-fifteen')
-        if self.cfg.v == 20000:
-            voltage.set_active_id('voltage-twenty')
+        voltage.set_value(self.cfg.v/1000)
 
         current.set_value(self.cfg.i/1000)
 
@@ -422,8 +413,8 @@ class Handler:
         # Set visibility
         rev.set_reveal_child(self.cfg != self.cfg_clean)
 
-    def on_voltage_combobox_changed(self, combo):
-        self.cfg = self.cfg._replace(v=int(combo.get_active_text()) * 1000)
+    def on_voltage_spinbutton_changed(self, spin):
+        self.cfg = self.cfg._replace(v=int(spin.get_value() * 1000))
 
         self._set_save_button_visibility()
 
