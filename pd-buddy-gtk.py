@@ -196,6 +196,8 @@ class PDOListRow(Gtk.ListBoxRow):
         # Type label
         if model.pdo.pdo_type == "fixed":
             type_text = "Fixed"
+        elif model.pdo.pdo_type == "pps":
+            type_text = "Programmable"
         elif model.pdo.pdo_type == "unknown":
             type_text = "Unknown"
         elif model.pdo.pdo_type == "typec_virtual":
@@ -205,9 +207,13 @@ class PDOListRow(Gtk.ListBoxRow):
         box.pack_start(type_label, True, True, 0)
 
         # Voltage label
-        if (model.pdo.pdo_type != "unknown"
-                and model.pdo.pdo_type != "typec_virtual"):
+        if model.pdo.pdo_type == "fixed":
             voltage_label = Gtk.Label("{:g} V".format(model.pdo.v / 1000.0))
+            voltage_label.set_halign(Gtk.Align.END)
+            box.pack_start(voltage_label, True, True, 0)
+        elif model.pdo.pdo_type == "pps":
+            voltage_label = Gtk.Label("{:g}\u2013{:g} V".format(
+                    model.pdo.vmin / 1000.0, model.pdo.vmax / 1000.0))
             voltage_label.set_halign(Gtk.Align.END)
             box.pack_start(voltage_label, True, True, 0)
 
@@ -229,7 +235,7 @@ class PDOListRow(Gtk.ListBoxRow):
                             PDOListRow.oc_tooltips[model.pdo.peak_i])
                     right_box.pack_end(oc_image, True, False, 0)
             except AttributeError:
-                # If this is a typec_virtual PDO, there's no peak_i attribute.
+                # If this isn't a fixed PDO, there's no peak_i attribute.
                 # Not a problem, so just ignore the error.
                 pass
         else:
@@ -300,7 +306,8 @@ class Handler:
                     # do want to display no configuration though
                     self.cfg = pdbuddy.SinkConfig(
                             status=pdbuddy.SinkStatus.VALID,
-                            flags=pdbuddy.SinkFlags.NONE, v=0, i=0)
+                            flags=pdbuddy.SinkFlags.NONE, v=0, vmin=0, vmax=0,
+                            i=0, idim=pdbuddy.SinkDimension.CURRENT)
                 else:
                     self.cfg = pdbs.get_tmpcfg()
         except OSError as e:
