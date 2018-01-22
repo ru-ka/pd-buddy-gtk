@@ -284,8 +284,8 @@ class Handler:
 
     def on_select_list_row_activated(self, selectlist, serport):
         # Get relevant widgets
-        voltage = self.builder.get_object("voltage-spinbutton")
-        current = self.builder.get_object("current-spinbutton")
+        voltage = self.builder.get_object("voltage-adjustment")
+        current = self.builder.get_object("current-adjustment")
         giveback = self.builder.get_object("giveback-toggle")
         pd_frame = self.builder.get_object("power-delivery-frame")
         output = self.builder.get_object("output-switch")
@@ -420,13 +420,13 @@ class Handler:
         # Set visibility
         rev.set_reveal_child(self.cfg != self.cfg_clean)
 
-    def on_voltage_spinbutton_changed(self, spin):
-        self.cfg = self.cfg._replace(v=int(spin.get_value() * 1000))
+    def on_voltage_adjustment_value_changed(self, adj):
+        self.cfg = self.cfg._replace(v=int(adj.get_value() * 1000))
 
         self._set_save_button_visibility()
 
-    def on_current_spinbutton_changed(self, spin):
-        self.cfg = self.cfg._replace(i=int(spin.get_value() * 1000))
+    def on_current_adjustment_value_changed(self, adj):
+        self.cfg = self.cfg._replace(i=int(adj.get_value() * 1000))
 
         self._set_save_button_visibility()
 
