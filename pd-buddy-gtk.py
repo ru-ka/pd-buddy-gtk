@@ -286,7 +286,8 @@ class Handler:
         # Get relevant widgets
         voltage = self.builder.get_object("voltage-adjustment")
         current = self.builder.get_object("current-adjustment")
-        giveback = self.builder.get_object("giveback-toggle")
+        current_dim = self.builder.get_object("current-dimension")
+        giveback = self.builder.get_object("giveback-switch")
         pd_frame = self.builder.get_object("power-delivery-frame")
         output = self.builder.get_object("output-switch")
         cap_row = self.builder.get_object("source-cap-row")
@@ -317,12 +318,18 @@ class Handler:
         self._store_device_settings()
         self._set_save_button_visibility()
 
-        # Set giveback button state
+        # Set giveback switch state
         giveback.set_active(bool(self.cfg.flags & pdbuddy.SinkFlags.GIVEBACK))
 
         # Get voltage and current from device and load them into the GUI
         voltage.set_value(self.cfg.v/1000)
 
+        if self.cfg.idim == pdbuddy.SinkDimension.CURRENT:
+            current_dim.set_active_id("idim-current")
+        elif self.cfg.idim == pdbuddy.SinkDimension.POWER:
+            current_dim.set_active_id("idim-power")
+        elif self.cfg.idim == pdbuddy.SinkDimension.RESISTANCE:
+            current_dim.set_active_id("idim-resistance")
         current.set_value(self.cfg.i/1000)
 
         # Set PD frame visibility and output switch state
@@ -425,13 +432,49 @@ class Handler:
 
         self._set_save_button_visibility()
 
+    def on_current_dimension_changed(self, cb):
+        item = cb.get_active_id()
+        value = self.builder.get_object("current-adjustment")
+        unit = self.builder.get_object("current-unit")
+
+        if item == "idim-current":
+            if self.cfg.idim == pdbuddy.SinkDimension.POWER:
+                self.cfg = self.cfg._replace(i=self.cfg.i/self.cfg.v*1000.0)
+            elif self.cfg.idim == pdbuddy.SinkDimension.RESISTANCE:
+                self.cfg = self.cfg._replace(i=self.cfg.v/self.cfg.i*1000.0)
+            value.configure(self.cfg.i / 1000.0, 0, 5, 0.1, 1, 0)
+            idim = pdbuddy.SinkDimension.CURRENT
+            unit.set_text("A")
+        if item == "idim-power":
+            if self.cfg.idim == pdbuddy.SinkDimension.CURRENT:
+                self.cfg = self.cfg._replace(i=self.cfg.i*self.cfg.v/1000.0)
+            elif self.cfg.idim == pdbuddy.SinkDimension.RESISTANCE:
+                self.cfg = self.cfg._replace(
+                        i=self.cfg.v*self.cfg.v/self.cfg.i)
+            idim = pdbuddy.SinkDimension.POWER
+            value.configure(self.cfg.i / 1000.0, 0, 100, 1, 10, 0)
+            unit.set_text("W")
+        if item == "idim-resistance":
+            if self.cfg.idim == pdbuddy.SinkDimension.CURRENT:
+                self.cfg = self.cfg._replace(i=self.cfg.v/self.cfg.i*1000.0)
+            elif self.cfg.idim == pdbuddy.SinkDimension.POWER:
+                self.cfg = self.cfg._replace(
+                        i=self.cfg.v*self.cfg.v/self.cfg.i)
+            idim = pdbuddy.SinkDimension.RESISTANCE
+            value.configure(self.cfg.i / 1000.0, 0, 655.35, 1, 10, 0)
+            unit.set_text("\u03a9")
+
+        self.cfg = self.cfg._replace(idim=idim)
+
+        self._set_save_button_visibility()
+
     def on_current_adjustment_value_changed(self, adj):
         self.cfg = self.cfg._replace(i=int(adj.get_value() * 1000))
 
         self._set_save_button_visibility()
 
-    def on_giveback_toggle_toggled(self, toggle):
-        if toggle.get_active():
+    def on_giveback_switch_state_set(self, switch, state):
+        if state:
             self.cfg = self.cfg._replace(flags=self.cfg.flags|pdbuddy.SinkFlags.GIVEBACK)
         else:
             self.cfg = self.cfg._replace(flags=self.cfg.flags&~pdbuddy.SinkFlags.GIVEBACK)

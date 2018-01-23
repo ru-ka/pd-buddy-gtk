@@ -195,6 +195,7 @@
                                                 <property name="label" translatable="yes">_Voltage</property>
                                                 <property name="use_underline">True</property>
                                                 <property name="justify">right</property>
+                                                <property name="mnemonic_widget">voltage-spinbutton</property>
                                               </object>
                                               <packing>
                                                 <property name="left_attach">0</property>
@@ -207,6 +208,7 @@
                                                 <property name="can_focus">False</property>
                                                 <property name="halign">start</property>
                                                 <property name="label" translatable="yes">V</property>
+                                                <property name="width_chars">2</property>
                                               </object>
                                               <packing>
                                                 <property name="left_attach">2</property>
@@ -217,7 +219,7 @@
                                               <object class="GtkSpinButton" id="voltage-spinbutton">
                                                 <property name="visible">True</property>
                                                 <property name="can_focus">True</property>
-                                                <property name="width_chars">5</property>
+                                                <property name="width_chars">6</property>
                                                 <property name="text" translatable="yes">0.00</property>
                                                 <property name="xalign">1</property>
                                                 <property name="input_purpose">number</property>
@@ -251,27 +253,11 @@
                                             <property name="margin_bottom">6</property>
                                             <property name="column_spacing">12</property>
                                             <child>
-                                              <object class="GtkLabel">
-                                                <property name="visible">True</property>
-                                                <property name="can_focus">False</property>
-                                                <property name="halign">start</property>
-                                                <property name="hexpand">True</property>
-                                                <property name="label" translatable="yes">_Current</property>
-                                                <property name="use_underline">True</property>
-                                                <property name="justify">right</property>
-                                                <property name="mnemonic_widget">current-spinbutton</property>
-                                              </object>
-                                              <packing>
-                                                <property name="left_attach">0</property>
-                                                <property name="top_attach">0</property>
-                                              </packing>
-                                            </child>
-                                            <child>
                                               <object class="GtkSpinButton" id="current-spinbutton">
                                                 <property name="visible">True</property>
                                                 <property name="can_focus">True</property>
                                                 <property name="margin_left">12</property>
-                                                <property name="width_chars">5</property>
+                                                <property name="width_chars">6</property>
                                                 <property name="xalign">1</property>
                                                 <property name="input_purpose">number</property>
                                                 <property name="adjustment">current-adjustment</property>
@@ -284,14 +270,34 @@
                                               </packing>
                                             </child>
                                             <child>
-                                              <object class="GtkLabel">
+                                              <object class="GtkLabel" id="current-unit">
                                                 <property name="visible">True</property>
                                                 <property name="can_focus">False</property>
                                                 <property name="halign">start</property>
                                                 <property name="label" translatable="yes">A</property>
+                                                <property name="width_chars">2</property>
                                               </object>
                                               <packing>
                                                 <property name="left_attach">2</property>
+                                                <property name="top_attach">0</property>
+                                              </packing>
+                                            </child>
+                                            <child>
+                                              <object class="GtkComboBoxText" id="current-dimension">
+                                                <property name="visible">True</property>
+                                                <property name="can_focus">False</property>
+                                                <property name="halign">start</property>
+                                                <property name="hexpand">True</property>
+                                                <property name="active_id">idim-current</property>
+                                                <items>
+                                                  <item id="idim-current" translatable="yes">Current</item>
+                                                  <item id="idim-power" translatable="yes">Power</item>
+                                                  <item id="idim-resistance" translatable="yes">Resistance</item>
+                                                </items>
+                                                <signal name="changed" handler="on_current_dimension_changed" swapped="no"/>
+                                              </object>
+                                              <packing>
+                                                <property name="left_attach">0</property>
                                                 <property name="top_attach">0</property>
                                               </packing>
                                             </child>
@@ -321,8 +327,10 @@
                                                 <property name="can_focus">False</property>
                                                 <property name="halign">start</property>
                                                 <property name="hexpand">True</property>
-                                                <property name="label" translatable="yes">Flags</property>
+                                                <property name="label" translatable="yes">_GiveBack</property>
+                                                <property name="use_underline">True</property>
                                                 <property name="justify">right</property>
+                                                <property name="mnemonic_widget">giveback-switch</property>
                                               </object>
                                               <packing>
                                                 <property name="left_attach">0</property>
@@ -330,26 +338,10 @@
                                               </packing>
                                             </child>
                                             <child>
-                                              <object class="GtkButtonBox">
+                                              <object class="GtkSwitch" id="giveback-switch">
                                                 <property name="visible">True</property>
-                                                <property name="can_focus">False</property>
-                                                <property name="halign">start</property>
-                                                <property name="layout_style">expand</property>
-                                                <child>
-                                                  <object class="GtkToggleButton" id="giveback-toggle">
-                                                    <property name="label" translatable="yes">_GiveBack</property>
-                                                    <property name="visible">True</property>
-                                                    <property name="can_focus">True</property>
-                                                    <property name="receives_default">True</property>
-                                                    <property name="use_underline">True</property>
-                                                    <signal name="toggled" handler="on_giveback_toggle_toggled" swapped="no"/>
-                                                  </object>
-                                                  <packing>
-                                                    <property name="expand">True</property>
-                                                    <property name="fill">True</property>
-                                                    <property name="position">0</property>
-                                                  </packing>
-                                                </child>
+                                                <property name="can_focus">True</property>
+                                                <signal name="state-set" handler="on_giveback_switch_state_set" swapped="no"/>
                                               </object>
                                               <packing>
                                                 <property name="left_attach">1</property>
@@ -468,7 +460,7 @@
                                                 <property name="visible">True</property>
                                                 <property name="can_focus">False</property>
                                                 <property name="halign">start</property>
-                                                <property name="label" translatable="yes">_Source Capabilities</property>
+                                                <property name="label" translatable="yes">Source _Capabilities</property>
                                                 <property name="use_underline">True</property>
                                                 <property name="justify">right</property>
                                                 <property name="mnemonic_widget">source-cap-row</property>
