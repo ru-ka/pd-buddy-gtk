@@ -54,7 +54,9 @@ class SelectListStore(Gio.ListStore):
 
 def list_box_update_header_func(row, before, data):
     """Add a separator header to all rows but the first one"""
-    if before is None:
+    name = Gtk.Buildable.get_name(row)
+    # No header over the vrange-row to make it look like part of the row above
+    if before is None or name == "vrange-row":
         row.set_header(None)
         return
 
@@ -255,9 +257,7 @@ class Handler:
     def __init__(self, builder):
         self.builder = builder
         self.serial_port = None
-        self.voltage = None
-        self.current = None
-        self.giveback = None
+        self.vrange_set = False
         self.selectlist = None
 
     def on_pdb_window_realize(self, *args):
@@ -285,6 +285,9 @@ class Handler:
     def on_select_list_row_activated(self, selectlist, serport):
         # Get relevant widgets
         voltage = self.builder.get_object("voltage-adjustment")
+        vr_switch = self.builder.get_object("vrange-switch")
+        vmin_adj = self.builder.get_object("vmin-adjustment")
+        vmax_adj = self.builder.get_object("vmax-adjustment")
         current = self.builder.get_object("current-adjustment")
         current_dim = self.builder.get_object("current-dimension")
         giveback = self.builder.get_object("giveback-switch")
@@ -311,6 +314,10 @@ class Handler:
                             i=0, idim=pdbuddy.SinkDimension.CURRENT)
                 else:
                     self.cfg = pdbs.get_tmpcfg()
+                    if self.cfg.vmin is None:
+                        self.cfg = self.cfg._replace(vmin=0)
+                    if self.cfg.vmax is None:
+                        self.cfg = self.cfg._replace(vmax=0)
         except OSError as e:
             comms_error_dialog(window, e)
             return
@@ -323,6 +330,13 @@ class Handler:
 
         # Get voltage and current from device and load them into the GUI
         voltage.set_value(self.cfg.v/1000)
+
+        vr_switch.set_active(self.cfg.vmin != 0 or self.cfg.vmax != 0)
+        self.vrange_set = True
+        vmin_adj.set_value(self.cfg.vmin/1000)
+        self._set_hv_pref_image()
+        vmax_adj.set_value(self.cfg.vmax/1000)
+        self.vrange_set = False
 
         if self.cfg.idim == pdbuddy.SinkDimension.CURRENT:
             current_dim.set_active_id("idim-current")
@@ -431,6 +445,60 @@ class Handler:
         self.cfg = self.cfg._replace(v=int(adj.get_value() * 1000))
 
         self._set_save_button_visibility()
+
+    def on_vrange_switch_state_set(self, switch, state):
+        row = self.builder.get_object("vrange-row")
+        vmin_adj = self.builder.get_object("vmin-adjustment")
+        vmax_adj = self.builder.get_object("vmax-adjustment")
+
+        row.set_visible(state)
+        if not state:
+            self.cfg = self.cfg._replace(vmin=0, vmax=0)
+        self.vrange_set = True
+        vmin_adj.set_value(self.cfg.vmin/1000)
+        vmax_adj.set_value(self.cfg.vmax/1000)
+        self.vrange_set = False
+
+        self._set_save_button_visibility()
+
+    def on_vmin_adjustment_value_changed(self, adj):
+        if not self.vrange_set:
+            self.cfg = self.cfg._replace(vmin=int(adj.get_value() * 1000))
+
+            # Update vmax if necessary
+            vmax_adj = self.builder.get_object("vmax-adjustment")
+            if adj.get_value() > vmax_adj.get_value():
+                vmax_adj.set_value(adj.get_value())
+
+            self._set_save_button_visibility()
+
+    def on_vmax_adjustment_value_changed(self, adj):
+        if not self.vrange_set:
+            self.cfg = self.cfg._replace(vmax=int(adj.get_value() * 1000))
+
+            # Update vmin if necessary
+            vmin_adj = self.builder.get_object("vmin-adjustment")
+            if adj.get_value() < vmin_adj.get_value():
+                vmin_adj.set_value(adj.get_value())
+
+            self._set_save_button_visibility()
+
+    def on_hv_preferred_button_clicked(self, button):
+        self.cfg = self.cfg._replace(
+                flags=self.cfg.flags^pdbuddy.SinkFlags.HV_PREFERRED)
+
+        self._set_hv_pref_image()
+        self._set_save_button_visibility()
+
+    def _set_hv_pref_image(self):
+        hv_pref = self.builder.get_object("hv-preferred-button")
+        image = self.builder.get_object("order-image")
+
+        if self.cfg.flags & pdbuddy.SinkFlags.HV_PREFERRED:
+            image.set_from_icon_name("go-previous-symbolic",
+                    Gtk.IconSize.BUTTON)
+        else:
+            image.set_from_icon_name("go-next-symbolic", Gtk.IconSize.BUTTON)
 
     def on_current_dimension_changed(self, cb):
         item = cb.get_active_id()
